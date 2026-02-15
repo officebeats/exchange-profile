@@ -931,9 +931,8 @@ body {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  background: linear-gradient(to bottom right, var(--card-bg), #fbfbfd);
+  background: var(--pill-bg);
+  border: 1px solid var(--border);
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
   transition: all 0.2s ease;
