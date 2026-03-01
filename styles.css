@@ -1996,33 +1996,42 @@ body.premium-off .video-iframe {
   }
 }
 
-/* ========== SERVICES SEARCH ========== */
+/* ========== SERVICES SEARCH (V2 - PREMIUM MINIMALIST) ========== */
 .services-search-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0;
-  background: var(--pill-bg);
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  padding: 0 10px;
-  height: 36px;
-  min-width: 180px;
-  max-width: 240px;
-  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Minimalist border */
+  border-radius: 8px; /* Slightly tighter radius */
+  padding: 0 12px;
+  height: 34px;
+  min-width: 160px;
+  max-width: 220px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  backdrop-filter: blur(8px);
+}
+
+.services-search-wrapper:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .services-search-wrapper:focus-within {
+  background: rgba(255, 255, 255, 0.07);
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-  background: var(--card-bg);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  max-width: 280px; /* Subtle expansion on focus */
 }
 
 .services-search-icon {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
-  transition: color 0.2s;
+  transition: color 0.3s;
+  width: 14px;
+  height: 14px;
 }
 
 .services-search-wrapper:focus-within .services-search-icon {
@@ -2032,68 +2041,89 @@ body.premium-off .video-iframe {
 .services-search-input {
   flex: 1;
   border: none;
-  outline: none;
+  outline: none !important;
   background: transparent;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 12px; /* Smaller, more elegant font */
   font-weight: 500;
-  color: var(--text-primary);
-  padding: 0 8px;
+  color: #fff; /* Crisp white for focus */
+  padding: 0 10px;
   height: 100%;
   min-width: 0;
+  letter-spacing: -0.01em;
 }
 
 .services-search-input::placeholder {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.25);
   font-weight: 400;
+}
+
+[data-theme="light"] .services-search-wrapper {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .services-search-input {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .services-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.3);
 }
 
 .services-search-clear {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: none;
-  background: var(--pill-bg);
-  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  margin-left: 4px;
 }
 
 .services-search-clear:hover {
-  background: var(--border-light);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.1);
 }
 
-/* No-results state */
+/* No-results state - FAANG minimalist */
 .services-no-results {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 60px 40px;
   text-align: center;
-  gap: 8px;
+  gap: 16px;
   color: var(--text-muted);
 }
 
 .services-no-results svg {
-  opacity: 0.4;
+  opacity: 0.2;
+  stroke-width: 1px; /* Thinner lines */
 }
 
 .services-no-results span {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
 }
 
-/* Highlight matched pill */
+/* Highlight matched pill - Glow effect */
 .pill--highlight {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  background: rgba(37, 99, 235, 0.05) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.15);
 }
 
 /* Hidden pill during search */
@@ -2106,5 +2136,8 @@ body.premium-off .video-iframe {
     min-width: 0;
     max-width: 100%;
     flex: 1;
+  }
+  .services-search-wrapper:focus-within {
+    max-width: 100%;
   }
 }
