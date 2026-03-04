@@ -51,46 +51,17 @@ const companyData = {
   },
 
   services: {
-    typesOfServices: [
-      "Janitorial Cleaning: Interior",
-      "Day Porter",
-      "Janitorial / Custodial Services",
-    ],
-    typesOfAccounts: [
-      "Fine Dining",
-      "Pub/Bar",
-      "Local",
-      "Health Club/Fitness Center",
-      "Clinic/Medical Office",
-      "Physical Therapy/Rehabilitation",
-      "Distribution Center",
-      "Manufacturing (Light)",
-      "Condominium Building/Complex",
-      "Class C Building",
-      "Class B Building",
-      "Class A Building",
-      "Auto Dealership",
-      "Bank Branch",
-      "Drugstore/Pharmacy",
-      "Department Store",
-      "Airport / Transportation Hub",
-      "Hospital / Acute Care",
-      "University / Higher Education",
-      "K-12 School",
-      "Government / Municipal",
-      "Data Center",
-      "Warehouse / Logistics",
-      "Hotel / Hospitality",
-      "Senior Living / Memory Care",
-      "Sports & Recreation Facility",
-      "Convention Center",
-      "Performing Arts Venue",
-      "Retail Strip Mall",
-      "Fast Casual Restaurant",
-      "Food Processing Facility",
-      "Pharmaceutical / Lab",
-      "Urgent Care Center",
-    ],
+    accountTypes: {
+      "Hospitality": ["Fine Dining", "Pub/Bar", "Fast Casual Restaurant", "Hotel / Hospitality"],
+      "Healthcare": ["Clinic/Medical Office", "Physical Therapy/Rehabilitation", "Hospital / Acute Care", "Pharmaceutical / Lab", "Urgent Care Center", "Senior Living / Memory Care"],
+      "Commercial & Residential": ["Condominium Building/Complex", "Class C Building", "Class B Building", "Class A Building"],
+      "Industrial & Logistics": ["Distribution Center", "Manufacturing (Light)", "Data Center", "Warehouse / Logistics", "Food Processing Facility"],
+      "Retail & Finance": ["Auto Dealership", "Bank Branch", "Drugstore/Pharmacy", "Department Store", "Retail Strip Mall"],
+      "Institutional & Public": ["Local", "Airport / Transportation Hub", "University / Higher Education", "K-12 School", "Government / Municipal", "Sports & Recreation Facility", "Convention Center", "Performing Arts Venue"]
+    },
+    serviceTypes: {
+      "Core Janitorial": ["Janitorial Cleaning: Interior", "Day Porter", "Janitorial / Custodial Services"]
+    },
     unionLabor: "Non-Union",
   },
 
@@ -691,109 +662,124 @@ function renderContact(d) {
 }
 
 // ── Render: Services (v3.1 - Categorized + Searchable) ──
+// ── Render: Services (v3.3 - Dictionary Mapped with Fuzzy Search + Segmented Controls) ──
 function renderServices(d) {
   const c = $("#servicesRows");
   let html = "";
 
-  if (d.services.typesOfServices?.length) {
-    html += `
-      <div class="services-group" data-group="core" style="margin-bottom: 20px;">
-        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:10px;">Core Capabilities</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${d.services.typesOfServices
-            .map(
-              (t) =>
-                `<span class="pill service-pill" data-service="${t.toLowerCase()}" style="font-weight:600; padding:6px 14px; background:var(--pill-bg); color:var(--text-primary);">${t}</span>`,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
+  const renderGroup = (
+    title,
+    dataDict,
+    rootStyle = "",
+    pillStyle = "color:var(--text-primary); border-color:var(--border-light);",
+  ) => {
+    if (!dataDict || Object.keys(dataDict).length === 0) return "";
+    let groupHtml = `<div class="services-group" style="margin-bottom: 24px; ${rootStyle}">`;
+    groupHtml += `<div style="font-size:16px; font-weight:800; letter-spacing:-0.2px; color:white; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${title}</div>`;
 
-  if (d.services.typesOfAccounts?.length) {
-    html += `
-      <div class="services-group" data-group="industry">
-        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:10px;">Industry Specialization</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          ${d.services.typesOfAccounts
-            .map(
-              (t) =>
-                `<span class="pill service-pill" data-service="${t.toLowerCase()}" style="color:var(--text-primary); border-color:var(--border-light);">${t}</span>`,
-            )
-            .join("")}
+    for (const [parentCategory, childPills] of Object.entries(dataDict)) {
+      groupHtml += `
+        <div class="service-category" style="margin-bottom: 16px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:10px;">${parentCategory}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${childPills
+              .map(
+                (t) =>
+                  `<span class="pill service-pill" data-service="${t.toLowerCase()}" style="${pillStyle}">${t}</span>`,
+              )
+              .join("")}
+          </div>
         </div>
-      </div>
-    `;
-  }
+      `;
+    }
+    groupHtml += `</div>`;
+    return groupHtml;
+  };
 
-  // Wrap in fixed-height auto-scrolling container
+  // Build Segmented Control Toggle UI
+  const tabsHtml = `
+    <div style="display:flex; background:rgba(255,255,255,0.05); padding:4px; border-radius:8px; margin-bottom:20px;">
+      <button id="tab-accounts" style="flex:1; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; color:#fff; background:var(--accent); cursor:pointer; transition:all 0.2s; border:none; text-align:center;">Account Types</button>
+      <button id="tab-services" style="flex:1; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-muted); background:transparent; cursor:pointer; transition:all 0.2s; border:none; text-align:center;">Services</button>
+    </div>
+  `;
+
+  // Render both groups into distinct wrapper containers (id logic)
+  const accountsHtml = `
+    <div id="container-accounts" style="display:block;">
+      ${renderGroup(
+        "Account Types",
+        d.services.accountTypes,
+        "",
+        "background: transparent; border: 1px solid rgba(255,255,255,0.15); color: var(--text-primary);",
+      )}
+    </div>
+  `;
+
+  const servicesHtml = `
+    <div id="container-services" style="display:none;">
+      ${renderGroup(
+        "Services",
+        d.services.serviceTypes,
+        "margin-top: 12px;",
+        "background: rgba(255,255,255,0.06); color: #fff; font-weight: 500; border: 1px solid transparent;",
+      )}
+    </div>
+  `;
+
+  html += tabsHtml + accountsHtml + servicesHtml;
+
+  // Wrap in fixed-height container
   const scrollWrap = document.createElement("div");
-  scrollWrap.style.cssText =
-    "height:280px; overflow-y:auto; padding-right:6px;";
+  scrollWrap.style.cssText = "height:320px; overflow-y:auto; padding-right:6px;";
   scrollWrap.innerHTML = html;
   c.innerHTML = "";
   c.appendChild(scrollWrap);
 
-  // Thin scrollbar styling
   scrollWrap.style.scrollbarWidth = "thin";
 
-  // Auto-scroll logic — ping-pong: scrolls down then reverses back up
-  let scrollSpeed = 0.4;
-  let scrollPos = 0;
-  let direction = 1; // 1 = down, -1 = up
-  let isPaused = false;
-  let isSearchActive = false;
-  let rafId;
+  // Tab Interaction Logic
+  let activeTab = "accounts";
+  const tabAccountsBtn = scrollWrap.querySelector("#tab-accounts");
+  const tabServicesBtn = scrollWrap.querySelector("#tab-services");
+  const containerAccounts = scrollWrap.querySelector("#container-accounts");
+  const containerServices = scrollWrap.querySelector("#container-services");
 
-  const autoScroll = () => {
-    if (
-      !isPaused &&
-      !isSearchActive &&
-      scrollWrap.scrollHeight > scrollWrap.clientHeight
-    ) {
-      scrollPos += scrollSpeed * direction;
-      scrollWrap.scrollTop = scrollPos;
-
-      const maxScroll = scrollWrap.scrollHeight - scrollWrap.clientHeight;
-      if (scrollPos >= maxScroll) {
-        scrollPos = maxScroll;
-        direction = -1; // reverse: scroll back up
-      } else if (scrollPos <= 0) {
-        scrollPos = 0;
-        direction = 1; // reverse: scroll back down
-      }
+  const updateTabs = () => {
+    if (activeTab === "accounts") {
+      tabAccountsBtn.style.background = "var(--accent)";
+      tabAccountsBtn.style.color = "#fff";
+      tabServicesBtn.style.background = "transparent";
+      tabServicesBtn.style.color = "var(--text-muted)";
+      containerAccounts.style.display = "block";
+      containerServices.style.display = "none";
+    } else {
+      tabAccountsBtn.style.background = "transparent";
+      tabAccountsBtn.style.color = "var(--text-muted)";
+      tabServicesBtn.style.background = "var(--accent)";
+      tabServicesBtn.style.color = "#fff";
+      containerAccounts.style.display = "none";
+      containerServices.style.display = "block";
     }
-    rafId = requestAnimationFrame(autoScroll);
+    // ensure search handles display transition appropriately
+    if (searchInput.value.trim() !== "") {
+      filterServices();
+    }
   };
 
-  scrollWrap.addEventListener("mouseenter", () => (isPaused = true));
-  scrollWrap.addEventListener("mouseleave", () => {
-    scrollPos = scrollWrap.scrollTop;
-    isPaused = false;
-  });
-  scrollWrap.addEventListener("touchstart", () => (isPaused = true));
-  scrollWrap.addEventListener("touchend", () => {
-    scrollPos = scrollWrap.scrollTop;
-    isPaused = false;
+  tabAccountsBtn.addEventListener("click", () => {
+    if (activeTab !== "accounts") {
+      activeTab = "accounts";
+      updateTabs();
+    }
   });
 
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach((e) => {
-      if (e.isIntersecting) {
-        isPaused = false;
-        scrollPos = scrollWrap.scrollTop;
-        if (!rafId) autoScroll();
-      } else {
-        isPaused = true;
-        if (rafId) {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-        }
-      }
-    });
+  tabServicesBtn.addEventListener("click", () => {
+    if (activeTab !== "services") {
+      activeTab = "services";
+      updateTabs();
+    }
   });
-  obs.observe(scrollWrap);
 
   // ── Search filtering ──
   const searchInput = $("#servicesSearchInput");
@@ -801,9 +787,9 @@ function renderServices(d) {
   if (!searchInput || !clearBtn) return;
 
   const allPills = scrollWrap.querySelectorAll(".service-pill");
-  const groups = scrollWrap.querySelectorAll(".services-group");
+  const groups = scrollWrap.querySelectorAll(".service-category");
+  const rootGroups = scrollWrap.querySelectorAll(".services-group");
 
-  // No-results element (created once, inserted when needed)
   const noResults = document.createElement("div");
   noResults.className = "services-no-results";
   noResults.innerHTML = `
@@ -818,26 +804,18 @@ function renderServices(d) {
 
   const filterServices = () => {
     const query = searchInput.value.trim().toLowerCase();
-    isSearchActive = query.length > 0;
-
-    // Show/hide clear button
     clearBtn.style.display = query.length > 0 ? "flex" : "none";
 
     if (!query) {
-      // Reset: show all pills, remove highlights
-      allPills.forEach((pill) => {
-        pill.classList.remove("pill--hidden", "pill--highlight");
-      });
+      allPills.forEach((p) => p.classList.remove("pill--hidden", "pill--highlight"));
       groups.forEach((g) => (g.style.display = ""));
+      rootGroups.forEach((g) => (g.style.display = ""));
       noResults.style.display = "none";
       scrollWrap.scrollTop = 0;
-      scrollPos = 0;
       return;
     }
 
     let totalVisible = 0;
-
-    // Filter each pill
     allPills.forEach((pill) => {
       const text = pill.getAttribute("data-service") || "";
       if (text.includes(query)) {
@@ -850,9 +828,27 @@ function renderServices(d) {
       }
     });
 
-    // Hide empty groups
     groups.forEach((g) => {
-      const visibleInGroup = g.querySelectorAll(
+      const visibleInGroup = g.querySelectorAll(".service-pill:not(.pill--hidden)").length;
+      g.style.display = visibleInGroup === 0 ? "none" : "";
+    });
+
+    rootGroups.forEach((g) => {
+      const visibleInRoot = g.querySelectorAll(".service-pill:not(.pill--hidden)").length;
+      g.style.display = visibleInRoot === 0 ? "none" : "";
+    });
+
+    noResults.style.display = totalVisible === 0 ? "flex" : "none";
+    scrollWrap.scrollTop = 0;
+  };
+
+  searchInput.addEventListener("input", filterServices);
+  clearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    filterServices();
+    searchInput.focus();
+  });
+}
         ".service-pill:not(.pill--hidden)",
       ).length;
       g.style.display = visibleInGroup === 0 ? "none" : "";
@@ -1330,77 +1326,86 @@ function renderVideo(d) {
   `;
 }
 
-// ── Render: Trust & Safety (v2.1 — EMR + Background Checks + Security Clearance + Training) ──
+// ── Render: Trust & Safety (v2.2 — Typography & Color Standardization) ──
 function renderTrustLayer(d) {
   const c = $("#trustContent");
   if (!c || !d.compliance) return;
 
   const emr = d.compliance.emr[0];
-  const bgChecks = d.compliance.backgroundChecks;
-  const clearance = d.compliance.securityClearance;
 
-  // EMR Score styling logic
+  // EMR Score styling logic with Safety Awareness
   const emrFloat = parseFloat(emr.rate);
-  const emrColor = emrFloat <= 1.0 ? "var(--success)" : "var(--error)";
-  // Map 0.5 - 1.5 to 0% - 100% position
+  let emrColor = "var(--success)";
+  if (emrFloat > 1.0) emrColor = "#ff453a";
+  else if (emrFloat > 0.8) emrColor = "var(--warning)";
+
   let emrPercent = ((emrFloat - 0.5) / (1.5 - 0.5)) * 100;
   emrPercent = Math.max(0, Math.min(100, emrPercent));
 
-  // Icons for the trust items
-  const bgCheckIcon =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
-  const clearanceIcon =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-  const trainingIcon =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>';
+  const bgCheckIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+  const clearanceIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  const trainingIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" width="18" height="18" style="flex-shrink:0;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>';
 
   c.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px;">
-      <!-- Safety Benchmark -->
+      <!-- Safety Benchmark Card -->
       <div style="background:var(--pill-bg); padding:16px; border-radius:12px; border:1px solid var(--border-light);">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
           <div>
-            <div style="font-size:16px; font-weight:700; color:white; line-height:1.2; margin-bottom:4px; letter-spacing:-0.2px;">Safety Benchmark</div>
-            <div style="font-size:13px; color:var(--text-secondary);">Industry average is 1.0</div>
+            <div style="font-size:16px; font-weight:700; color:white; line-height:1.2; margin-bottom:4px; letter-spacing:-0.2px; display:flex; align-items:center; gap:6px;">
+              Safety Benchmark
+              <div class="emr-tooltip-container">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--text-muted);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="emr-tooltip-text">
+                  <strong>EMR Safety Rating</strong><br><br>
+                  An Experience Modification Rate (EMR) is used by insurance companies to gauge past cost of injuries and future chances of risk. <br><br>
+                  &bull; <strong>1.0</strong> is the Industry Benchmark.<br>
+                  &bull; <strong>Below 1.0</strong> indicates a safer than benchmark record.<br>
+                  &bull; <strong>Above 1.0</strong> indicates a higher risk record.
+                </div>
+              </div>
+            </div>
+            <div style="font-size:13px; color:var(--text-secondary);">Industry Benchmark is 1.0</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:24px; font-weight:800; color:${emrColor}; letter-spacing:-0.5px; line-height:1;">${emr.rate} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">EMR</span></div>
+            <div style="font-size:24px; font-weight:800; letter-spacing:-0.5px; line-height:1; color: ${emrColor};">${emr.rate} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">EMR</span></div>
           </div>
         </div>
-        
-        <!-- EMR Bar Component -->
         <div style="position:relative; width:100%; height:8px; background:linear-gradient(to right, #34c759 40%, #ffcc00 60%, #ff3b30 100%); border-radius:4px; margin-top:16px;">
           <div style="position:absolute; top:-4px; left:${emrPercent}%; transform:translateX(-50%); width:4px; height:16px; background:#000; border-radius:2px; z-index:2; border:1px solid #fff;"></div>
           <div style="position:absolute; top:-2px; left:50%; width:2px; height:12px; background:rgba(0,0,0,0.2); z-index:1;"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--text-muted); font-weight:600;">
-          <span>High (0.5)</span>
-          <span>Industry Avg (1.0)</span>
-          <span>Low (1.5)</span>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">
+          <span style="color:#34c759;">High SAFETY (0.5)</span>
+          <span style="color:var(--text-muted);">Industry Benchmark (1.0)</span>
+          <span style="color:#ff453a;">Low SAFETY (1.5)</span>
         </div>
       </div>
 
-      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px;">
-        <div style="flex:1 1 calc(50% - 6px); max-width:calc(50% - 6px); background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; transition: box-shadow 0.2s, transform 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
+      <!-- Trust Factor Tiles (Matching Compliance Typography) -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div style="background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; transition: all 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
           <div style="display:flex; align-items:center; gap:8px;">
             ${trainingIcon}
             <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Specialized Training</span>
           </div>
-          <div style="font-size:24px; font-weight:800; color:var(--success); letter-spacing:-0.4px; line-height:1;">YES</div>
+          <div style="font-size:14px; font-weight:500; color:var(--success); letter-spacing:-0.2px; line-height:1;">YES</div>
         </div>
-        <div style="flex:1 1 calc(50% - 6px); max-width:calc(50% - 6px); background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; transition: box-shadow 0.2s, transform 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
+        <div style="background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; transition: all 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
           <div style="display:flex; align-items:center; gap:8px;">
             ${clearanceIcon}
             <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Security Clearance</span>
           </div>
-          <div style="font-size:24px; font-weight:800; color:var(--success); letter-spacing:-0.4px; line-height:1;">YES</div>
+          <div style="font-size:14px; font-weight:500; color:var(--success); letter-spacing:-0.2px; line-height:1;">YES</div>
         </div>
-        <div style="flex:1 1 calc(50% - 6px); max-width:calc(50% - 6px); background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; transition: box-shadow 0.2s, transform 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
-          <div style="display:flex; align-items:center; gap:8px;">
-            ${bgCheckIcon}
-            <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Background Checks</span>
+        <div style="grid-column: span 2; display:flex; justify-content:center;">
+          <div style="background:var(--pill-bg); border:1px solid var(--border-light); border-radius:14px; padding:18px 16px; display:flex; flex-direction:column; gap:8px; width:calc(50% - 6px); transition: all 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform=''; this.style.boxShadow='';">
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${bgCheckIcon}
+              <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Background Checks</span>
+            </div>
+            <div style="font-size:14px; font-weight:500; color:var(--success); letter-spacing:-0.2px; line-height:1;">YES</div>
           </div>
-          <div style="font-size:24px; font-weight:800; color:var(--success); letter-spacing:-0.4px; line-height:1;">YES</div>
         </div>
       </div>
     </div>
